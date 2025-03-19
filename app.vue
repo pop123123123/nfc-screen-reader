@@ -3,9 +3,9 @@
     Skip to main content
   </a>
   <div id="main-content" class="container mx-auto p-4 max-w-lg">
-    <h1 class="text-2xl font-bold mb-6 text-center">NFC Text Reader/Writer</h1>
+    <h1 class="text-2xl font-bold mb-6 text-center dark:text-white">NFC Text Reader/Writer</h1>
 
-    <div v-if="nfcSupported === false" class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert" aria-labelledby="nfc-error">
+    <div v-if="nfcSupported === false" class="bg-red-100 dark:bg-red-900/30 border-l-4 border-red-500 text-red-700 dark:text-red-400 p-4 mb-6" role="alert" aria-labelledby="nfc-error">
       <p id="nfc-error">Your device doesn't support NFC or the Web NFC API. This application requires a device with NFC capabilities and a compatible browser.</p>
     </div>
 
@@ -14,10 +14,10 @@
     </div>
 
     <div class="grid grid-cols-1 gap-6">
-      <!-- Read Mode Section -->
-      <div class="border rounded-lg p-4 bg-gray-50">
-        <h2 class="text-xl font-semibold mb-4">Read NFC Tag</h2>
-        <p class="mb-4 text-gray-600">Tap an NFC tag to read its content.</p>
+    <!-- Read Mode Section -->
+    <div class="border rounded-lg p-4 bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
+      <h2 class="text-xl font-semibold mb-4 dark:text-white">Read NFC Tag</h2>
+      <p class="mb-4 text-gray-600 dark:text-gray-300">Tap an NFC tag to read its content.</p>
 
         <button
           @click="startReading"
@@ -29,26 +29,26 @@
           {{ isReading ? 'Listening for tags...' : 'Start Reading' }}
         </button>
 
-        <div v-if="readText" class="mt-4 p-3 bg-white border rounded">
-          <h3 class="font-medium mb-2">Tag Content:</h3>
-          <p class="break-words" aria-live="polite" aria-atomic="true">{{ readText }}</p>
+        <div v-if="readText" class="mt-4 p-3 bg-white dark:bg-gray-700 border rounded dark:border-gray-600">
+          <h3 class="font-medium mb-2 dark:text-white">Tag Content:</h3>
+          <p class="break-words dark:text-gray-200" aria-live="polite" aria-atomic="true">{{ readText }}</p>
         </div>
       </div>
 
       <!-- Write Mode Section -->
-      <div class="border rounded-lg p-4 bg-gray-50">
-        <h2 class="text-xl font-semibold mb-4">Write to NFC Tag</h2>
+      <div class="border rounded-lg p-4 bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
+        <h2 class="text-xl font-semibold mb-4 dark:text-white">Write to NFC Tag</h2>
         <div class="mb-4">
-          <label for="write-text" class="block mb-2 text-gray-700">Text to write:</label>
-          <textarea
-            id="write-text"
-            v-model="textToWrite"
-            rows="4"
-            class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter text to write to the NFC tag..."
-            aria-describedby="write-text-instructions"
-          ></textarea>
-          <div id="write-text-instructions" class="mt-1 text-sm text-gray-600">
+        <label for="write-text" class="block mb-2 text-gray-700 dark:text-gray-200">Text to write:</label>
+        <textarea
+          id="write-text"
+          v-model="textToWrite"
+          rows="4"
+          class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          placeholder="Enter text to write to the NFC tag..."
+          aria-describedby="write-text-instructions"
+        ></textarea>
+        <div id="write-text-instructions" class="mt-1 text-sm text-gray-600 dark:text-gray-300">
             Enter the text you want to write to an NFC tag, then press the Write to Tag button and touch a tag to your device.
           </div>
         </div>
@@ -153,14 +153,14 @@ function setStatus(message: string, type: StatusType = 'info'): void {
 
   switch (type) {
     case 'success':
-      statusClass.value = 'bg-green-100 text-green-800';
+      statusClass.value = 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
       break;
     case 'error':
-      statusClass.value = 'bg-red-100 text-red-800';
+      statusClass.value = 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
       break;
     case 'info':
     default:
-      statusClass.value = 'bg-blue-100 text-blue-800';
+      statusClass.value = 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
       break;
   }
 
@@ -267,6 +267,6 @@ async function startWriting(): Promise<void> {
 
 <style>
 body {
-  @apply bg-white text-gray-800;
+  @apply bg-white text-gray-800 dark:bg-gray-900 dark:text-gray-100;
 }
 </style>
