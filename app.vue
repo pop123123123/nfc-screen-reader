@@ -1,12 +1,15 @@
 <template>
-  <div class="container mx-auto p-4 max-w-lg">
+  <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:z-50 focus:rounded">
+    Skip to main content
+  </a>
+  <div id="main-content" class="container mx-auto p-4 max-w-lg">
     <h1 class="text-2xl font-bold mb-6 text-center">NFC Text Reader/Writer</h1>
 
-    <div v-if="nfcSupported === false" class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
-      <p>Your device doesn't support NFC or the Web NFC API.</p>
+    <div v-if="nfcSupported === false" class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert" aria-labelledby="nfc-error">
+      <p id="nfc-error">Your device doesn't support NFC or the Web NFC API. This application requires a device with NFC capabilities and a compatible browser.</p>
     </div>
 
-    <div v-if="status" :class="statusClass" class="p-4 mb-6 rounded" role="status">
+    <div v-if="status" :class="statusClass" class="p-4 mb-6 rounded" role="status" aria-live="polite" aria-atomic="true">
       {{ status }}
     </div>
 
@@ -18,8 +21,10 @@
 
         <button
           @click="startReading"
-          class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded transition"
+          class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           :disabled="isReading || !nfcSupported"
+          :aria-busy="isReading"
+          aria-controls="tag-content"
         >
           {{ isReading ? 'Listening for tags...' : 'Start Reading' }}
         </button>
@@ -41,18 +46,29 @@
             rows="4"
             class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Enter text to write to the NFC tag..."
+            aria-describedby="write-text-instructions"
           ></textarea>
+          <div id="write-text-instructions" class="mt-1 text-sm text-gray-600">
+            Enter the text you want to write to an NFC tag, then press the Write to Tag button and touch a tag to your device.
+          </div>
         </div>
         <button
           @click="startWriting"
-          class="w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded transition"
+          class="w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded transition focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
           :disabled="isWriting || !textToWrite || !nfcSupported"
+          :aria-busy="isWriting"
+          aria-label="Write text to NFC tag"
         >
           {{ isWriting ? 'Tap a tag to write...' : 'Write to Tag' }}
         </button>
+        <div v-if="isWriting" class="sr-only" aria-live="assertive">
+          Ready to write. Please tap an NFC tag with your device.
+        </div>
       </div>
     </div>
   </div>
+  <!-- Hidden live region for screen reader announcements -->
+  <div id="status-announcement" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
 </template>
 
 <script setup lang="ts">
@@ -92,19 +108,47 @@ const statusClass = ref<string>('');
 // let hasChar = false;
 
 // const invisibleChar = '\u200B';
+const statusTimeout = ref<number | null>(null);
+const lastFocusedElement = ref<HTMLElement | null>(null);
 
-// Check if NFC is supported and notification permission
+// Check if NFC is supported and set up keyboard accessibility
 onMounted(() => {
   // Check NFC support
   if ('NDEFReader' in window) {
     nfcSupported.value = true;
   } else {
     nfcSupported.value = false;
+    // Announce to screen readers that NFC is not supported
+    const announcement = document.getElementById('status-announcement');
+    if (announcement) {
+      announcement.textContent = 'NFC is not supported on this device. The application functionality will be limited.';
+    }
   }
+
+  // Set up keyboard handler for escape key to cancel operations
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (isReading.value || isWriting.value) {
+        isReading.value = false;
+        isWriting.value = false;
+        setStatus('Operation cancelled by user', 'info');
+
+        // Return focus to the last focused element
+        if (lastFocusedElement.value) {
+          lastFocusedElement.value.focus();
+        }
+      }
+    }
+  });
 });
 
 // Set status message with color
 function setStatus(message: string, type: StatusType = 'info'): void {
+  // Clear any existing timeout
+  if (statusTimeout.value) {
+    clearTimeout(statusTimeout.value);
+  }
+
   status.value = message;
 
   switch (type) {
@@ -120,15 +164,27 @@ function setStatus(message: string, type: StatusType = 'info'): void {
       break;
   }
 
-  // Clear status after 3 seconds
-  setTimeout(() => {
+  // Announce to screen readers
+  const announcement = document.getElementById('status-announcement');
+  if (announcement) {
+    announcement.textContent = message;
+  }
+
+  // Clear status after 5 seconds (increased from 3 for better screen reader support)
+  statusTimeout.value = setTimeout(() => {
     status.value = '';
-  }, 3000);
+    if (announcement) {
+      announcement.textContent = '';
+    }
+  }, 5000);
 }
 
 // Start reading NFC tags
 async function startReading(): Promise<void> {
   if (!nfcSupported.value) return;
+
+  // Save the last focused element
+  lastFocusedElement.value = document.activeElement as HTMLElement;
 
   try {
     isReading.value = true;
@@ -147,9 +203,10 @@ async function startReading(): Promise<void> {
             // Use nextTick to ensure screen readers detect the change
             nextTick(() => {
               readText.value = textDecoder.decode(record.data);
+              // Focus on the tag content for screen readers
+              const contentElement = document.getElementById('tag-content');
+              if (contentElement) contentElement.focus();
             });
-            // readText.value = (hasChar ? '': invisibleChar) + textDecoder.decode(record.data);
-            // hasChar = !hasChar;
         }
       }
       isReading.value = false;
@@ -171,6 +228,9 @@ async function startReading(): Promise<void> {
 async function startWriting(): Promise<void> {
   if (!nfcSupported.value || !textToWrite.value) return;
 
+  // Save the last focused element
+  lastFocusedElement.value = document.activeElement as HTMLElement;
+
   try {
     isWriting.value = true;
 
@@ -186,6 +246,17 @@ async function startWriting(): Promise<void> {
 
     setStatus('Successfully wrote to tag!', 'success');
     isWriting.value = false;
+
+    // Announce success to screen readers
+    const announcement = document.getElementById('status-announcement');
+    if (announcement) {
+      announcement.textContent = `Text successfully written to NFC tag: "${textToWrite.value}"`;
+    }
+
+    // Return focus to the button
+    if (lastFocusedElement.value) {
+      lastFocusedElement.value.focus();
+    }
 
   } catch (error: any) {
     console.error('Error writing to NFC tag:', error);
