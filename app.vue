@@ -16,24 +16,6 @@
         <h2 class="text-xl font-semibold mb-4">Read NFC Tag</h2>
         <p class="mb-4 text-gray-600">Tap an NFC tag to read its content.</p>
 
-        <div v-if="notificationPermission !== 'granted'" class="mb-4">
-          <button
-            @click="requestNotificationPermission"
-            class="text-blue-500 underline"
-          >
-            Enable notifications
-          </button>
-        </div>
-
-        <div v-if="notificationPermission === 'granted'" class="mb-4 flex items-center">
-          <input
-            type="checkbox"
-            id="notification-toggle"
-            v-model="showNotificationsToggle"
-            class="mr-2"
-          />
-          <label for="notification-toggle">Show notifications when tags are read</label>
-        </div>
         <button
           @click="startReading"
           class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded transition"
@@ -44,7 +26,7 @@
 
         <div v-if="readText" class="mt-4 p-3 bg-white border rounded">
           <h3 class="font-medium mb-2">Tag Content:</h3>
-          <p class="break-words">{{ readText }}</p>
+          <p class="break-words" aria-live="polite" aria-atomic="true">{{ readText }}</p>
         </div>
       </div>
 
@@ -107,8 +89,9 @@ const readText = ref<string>('');
 const textToWrite = ref<string>('');
 const status = ref<string>('');
 const statusClass = ref<string>('');
-const notificationPermission = ref<NotificationPermission | null>(null);
-const showNotificationsToggle = ref<boolean>(false);
+// let hasChar = false;
+
+// const invisibleChar = '\u200B';
 
 // Check if NFC is supported and notification permission
 onMounted(() => {
@@ -117,11 +100,6 @@ onMounted(() => {
     nfcSupported.value = true;
   } else {
     nfcSupported.value = false;
-  }
-
-  // Check notification support
-  if ('Notification' in window) {
-    notificationPermission.value = Notification.permission;
   }
 });
 
@@ -148,44 +126,6 @@ function setStatus(message: string, type: StatusType = 'info'): void {
   }, 3000);
 }
 
-// Request notification permission
-async function requestNotificationPermission(): Promise<void> {
-  try {
-    if (!('Notification' in window)) {
-      setStatus('Notifications not supported in this browser', 'error');
-      return;
-    }
-
-    const permission = await Notification.requestPermission();
-    notificationPermission.value = permission;
-
-    if (permission === 'granted') {
-      setStatus('Notification permission granted', 'success');
-    } else {
-      setStatus('Notification permission denied', 'error');
-    }
-  } catch (error: any) {
-    console.error('Error requesting notification permission:', error);
-    setStatus('Failed to request notification permission', 'error');
-  }
-}
-
-// Show notification with tag content
-function showNotification(text: string): void {
-  if (notificationPermission.value !== 'granted' || !showNotificationsToggle.value) {
-    return;
-  }
-
-  try {
-    new Notification('NFC Tag Read', {
-      body: text,
-      // icon: '/pwa-192x192.png',
-    });
-  } catch (error: any) {
-    console.error('Error showing notification:', error);
-    setStatus(`Error showing notification: ${error.message}`, 'error');
-  }
-}
 // Start reading NFC tags
 async function startReading(): Promise<void> {
   if (!nfcSupported.value) return;
@@ -203,9 +143,13 @@ async function startReading(): Promise<void> {
       for (const record of event.message.records) {
         if (record.recordType === 'text') {
             const textDecoder = new TextDecoder();
-            readText.value = textDecoder.decode(record.data);
-            setStatus('Tag read successfully!', 'success');
-            showNotification(readText.value);
+            readText.value = '';
+            // Use nextTick to ensure screen readers detect the change
+            nextTick(() => {
+              readText.value = textDecoder.decode(record.data);
+            });
+            // readText.value = (hasChar ? '': invisibleChar) + textDecoder.decode(record.data);
+            // hasChar = !hasChar;
         }
       }
       isReading.value = false;
