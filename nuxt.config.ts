@@ -28,24 +28,11 @@ export default defineNuxtConfig({
       background_color: "#ffffff",
       display: "standalone",
       orientation: "portrait",
-      icons: [
-        {
-          src: "pwa-192x192.png",
-          sizes: "192x192",
-          type: "image/png",
-        },
-        {
-          src: "pwa-512x512.png",
-          sizes: "512x512",
-          type: "image/png",
-        },
-        {
-          src: "pwa-512x512.png",
-          sizes: "512x512",
-          type: "image/png",
-          purpose: "any maskable",
-        },
-      ],
+      start_url: "/",
+      scope: "/",
+      id: "/",
+      categories: ["utilities"],
+      prefer_related_applications: false,
     },
 
     workbox: {
@@ -69,6 +56,9 @@ export default defineNuxtConfig({
       installPrompt: true,
       periodicSyncForUpdates: 3600,
     },
+    pwaAssets: {
+      config: true,
+    }
   },
 
   compatibilityDate: "2025-03-19",

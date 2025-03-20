@@ -6492,6 +6492,7 @@
     "packageJson": {
       "dependencies": [
         "npm:@nuxtjs/tailwindcss@^6.13.2",
+        "npm:@vite-pwa/assets-generator@~0.2.6",
         "npm:@vite-pwa/nuxt@~0.10.6",
         "npm:nuxt@^3.16.1",
         "npm:typescript@^5.7.2",
